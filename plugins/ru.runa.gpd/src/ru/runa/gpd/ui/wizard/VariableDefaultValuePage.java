@@ -27,6 +27,7 @@ import ru.runa.wfe.user.Group;
 public class VariableDefaultValuePage extends DynaContentWizardPage {
     private String defaultValue;
     private Button useDefaultValueButton;
+    private Button dontUseDefaultValueButton;
 
     public VariableDefaultValuePage(Variable variable) {
         if (variable != null) {
@@ -50,13 +51,31 @@ public class VariableDefaultValuePage extends DynaContentWizardPage {
 
     @Override
     protected void createDynaContent() {
-        Button dontUseDefaultValueButton = new Button(dynaComposite, SWT.RADIO);
+        dontUseDefaultValueButton = new Button(dynaComposite, SWT.RADIO);
         dontUseDefaultValueButton.setText(Localization.getString("VariableDefaultValuePage.dontUse"));
         useDefaultValueButton = new Button(dynaComposite, SWT.RADIO);
         useDefaultValueButton.setText(Localization.getString("VariableDefaultValuePage.use"));
+        
+        final Text text = new Text(dynaComposite, SWT.BORDER);
+        text.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
+        if (!Strings.isNullOrEmpty(defaultValue)) {
+            text.setText(defaultValue);
+        }
+        else {
+            text.setEditable(false);
+        }
+        text.addModifyListener(new LoggingModifyTextAdapter() {
+            @Override
+            protected void onTextChanged(ModifyEvent e) throws Exception {
+                defaultValue = text.getText();
+                verifyContentIsValid();
+            }
+        });
+        
         String formatClassName = ((VariableWizard) getWizard()).getFormatPage().getType().getJavaClassName();
         boolean isFileMode = EmbeddedFileUtils.isFileVariableClassName(formatClassName);
         if (isFileMode) {
+            text.setVisible(false);
             if (!EmbeddedFileUtils.isProcessFile(defaultValue)) {
                 defaultValue = null;
             }
@@ -78,18 +97,6 @@ public class VariableDefaultValuePage extends DynaContentWizardPage {
                 }
             });
         } else {
-            final Text text = new Text(dynaComposite, SWT.BORDER);
-            text.setLayoutData(new GridData(GridData.FILL_HORIZONTAL));
-            if (defaultValue != null) {
-                text.setText(defaultValue);
-            }
-            text.addModifyListener(new LoggingModifyTextAdapter() {
-                @Override
-                protected void onTextChanged(ModifyEvent e) throws Exception {
-                    defaultValue = text.getText();
-                    verifyContentIsValid();
-                }
-            });
             useDefaultValueButton.addSelectionListener(new LoggingSelectionAdapter() {
 
                 @Override
@@ -97,13 +104,14 @@ public class VariableDefaultValuePage extends DynaContentWizardPage {
                     boolean useDefaultValue = useDefaultValueButton.getSelection();
                     text.setEditable(useDefaultValue);
                     if (!useDefaultValue) {
-                        defaultValue = "";
+                        text.setText("");
                     }
                     verifyContentIsValid();
                 }
             });
         }
         useDefaultValueButton.setSelection(!Strings.isNullOrEmpty(defaultValue));
+        text.setEditable(!Strings.isNullOrEmpty(defaultValue));
         dontUseDefaultValueButton.setSelection(!useDefaultValueButton.getSelection());
     }
 
